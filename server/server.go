@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"github.com/NYTimes/gziphandler"
+	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -13,8 +15,6 @@ import (
 	noesctmpl "text/template"
 	"time"
 
-	"github.com/NYTimes/gziphandler"
-	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
@@ -100,7 +100,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		path = "/" + randomstring.Generate(server.options.RandomUrlLength) + "/"
 	}
 
-	handlers := server.setupHandlers(cctx, cancel, path, counter)
+	handlers := server.setupHandlers(cctx, cancel, path, counter, server.options.OnlyEnableWS)
 	srv, err := server.setupHTTPServer(handlers)
 	if err != nil {
 		return errors.Wrapf(err, "failed to setup an HTTP server")
@@ -180,32 +180,36 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	return err
 }
 
-func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFunc, pathPrefix string, counter *counter) http.Handler {
-	staticFileHandler := http.FileServer(
-		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "static"},
-	)
-
+func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFunc, pathPrefix string, counter *counter, onlyEnableWS bool) http.Handler {
 	var siteMux = http.NewServeMux()
-	siteMux.HandleFunc(pathPrefix, server.handleIndex)
-	siteMux.Handle(pathPrefix+"js/", http.StripPrefix(pathPrefix, staticFileHandler))
-	siteMux.Handle(pathPrefix+"favicon.png", http.StripPrefix(pathPrefix, staticFileHandler))
-	siteMux.Handle(pathPrefix+"css/", http.StripPrefix(pathPrefix, staticFileHandler))
-
-	siteMux.HandleFunc(pathPrefix+"auth_token.js", server.handleAuthToken)
-	siteMux.HandleFunc(pathPrefix+"config.js", server.handleConfig)
-
 	siteHandler := http.Handler(siteMux)
+	wsMux := http.NewServeMux()
+	if !onlyEnableWS {
+		staticFileHandler := http.FileServer(
+			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "static"},
+		)
 
-	if server.options.EnableBasicAuth {
-		log.Printf("Using Basic Authentication")
-		siteHandler = server.wrapBasicAuth(siteHandler, server.options.Credential)
+
+		siteMux.HandleFunc(pathPrefix, server.handleIndex)
+		siteMux.Handle(pathPrefix+"js/", http.StripPrefix(pathPrefix, staticFileHandler))
+		siteMux.Handle(pathPrefix+"favicon.png", http.StripPrefix(pathPrefix, staticFileHandler))
+		siteMux.Handle(pathPrefix+"css/", http.StripPrefix(pathPrefix, staticFileHandler))
+
+		siteMux.HandleFunc(pathPrefix+"auth_token.js", server.handleAuthToken)
+		siteMux.HandleFunc(pathPrefix+"config.js", server.handleConfig)
+
+
+
+		if server.options.EnableBasicAuth {
+			log.Printf("Using Basic Authentication")
+			siteHandler = server.wrapBasicAuth(siteHandler, server.options.Credential)
+		}
+
+		withGz := gziphandler.GzipHandler(server.wrapHeaders(siteHandler))
+		siteHandler = server.wrapLogger(withGz)
+		wsMux.Handle("/", siteHandler)
 	}
 
-	withGz := gziphandler.GzipHandler(server.wrapHeaders(siteHandler))
-	siteHandler = server.wrapLogger(withGz)
-
-	wsMux := http.NewServeMux()
-	wsMux.Handle("/", siteHandler)
 	wsMux.HandleFunc(pathPrefix+"ws", server.generateHandleWS(ctx, cancel, counter))
 	siteHandler = http.Handler(wsMux)
 
