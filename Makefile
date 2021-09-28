@@ -3,6 +3,7 @@ GIT_COMMIT = `git rev-parse HEAD | cut -c1-7`
 VERSION = 2.0.0-alpha.3
 BUILD_OPTIONS = -ldflags "-X main.Version=$(VERSION) -X main.CommitID=$(GIT_COMMIT)"
 IMAGE_NAME = "opensourceway/gotty"
+IMAGE_TAG = "latest"
 
 gotty: main.go server/*.go webtty/*.go backend/*.go Makefile
 	godep go build ${BUILD_OPTIONS}
@@ -16,7 +17,7 @@ asset: bindata/static/js/gotty-bundle.js bindata/static/index.html bindata/stati
 all: asset gotty
 
 docker:
-	docker build --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg VERSION=${VERSION} -t ${IMAGE_NAME}:${GIT_COMMIT} .
+	docker build --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg VERSION=${VERSION} -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
 bindata:
 	mkdir bindata

@@ -16,5 +16,5 @@ RUN addgroup -S ${group} && adduser -S ${user} -G ${group} -h ${home}
 
 USER ${user}
 WORKDIR ${home}
-COPY --chown=${user} --from=builder /app/gotty .
+COPY --chown=${user} --from=builder /gotty/gotty .
 ENTRYPOINT ["/app/gotty"]
