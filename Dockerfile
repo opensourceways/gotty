@@ -1,13 +1,12 @@
-FROM golang:1.16.8-alpine3.14 as builder
+FROM golang:alpine3.13 as builder
 LABEL maintainer="tommylike<tommylikehu@gmail.com>"
 ARG GIT_COMMIT=375f66a
 ARG VERSION="2.0.0-alpha.3"
 WORKDIR /gotty
 COPY . /gotty
 RUN cd /gotty
-RUN go get github.com/jteeuwen/go-bindata/...
-RUN go get github.com/tools/godep
-RUN go godep go build -ldflags "-X main.Version=$VERSION -X main.CommitID=$GIT_COMMIT"
+RUN go mod download
+RUN CGO_ENABLED=0 go build -o gotty -ldflags "-X main.Version=$VERSION -X main.CommitID=$GIT_COMMIT"
 
 FROM alpine:3.13
 ARG user=app
