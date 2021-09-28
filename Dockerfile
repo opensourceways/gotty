@@ -1,4 +1,4 @@
-FROM golang:alpine3.13 as builder
+FROM golang:1.16.8-alpine3.14 as builder
 LABEL maintainer="tommylike<tommylikehu@gmail.com>"
 ARG GIT_COMMIT=375f66a
 ARG VERSION="2.0.0-alpha.3"
