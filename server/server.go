@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"regexp"
+	"strings"
 	noesctmpl "text/template"
 	"time"
 
@@ -96,7 +97,9 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	counter := newCounter(time.Duration(server.options.Timeout) * time.Second)
 
 	path := "/"
-	if server.options.EnableRandomUrl {
+	if len(server.options.UrlPrefix) != 0 {
+		path = "/" + strings.Trim(server.options.UrlPrefix, "/") + "/"
+	} else if server.options.EnableRandomUrl {
 		path = "/" + randomstring.Generate(server.options.RandomUrlLength) + "/"
 	}
 
@@ -189,7 +192,6 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 			&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "static"},
 		)
 
-
 		siteMux.HandleFunc(pathPrefix, server.handleIndex)
 		siteMux.Handle(pathPrefix+"js/", http.StripPrefix(pathPrefix, staticFileHandler))
 		siteMux.Handle(pathPrefix+"favicon.png", http.StripPrefix(pathPrefix, staticFileHandler))
@@ -197,8 +199,6 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 
 		siteMux.HandleFunc(pathPrefix+"auth_token.js", server.handleAuthToken)
 		siteMux.HandleFunc(pathPrefix+"config.js", server.handleConfig)
-
-
 
 		if server.options.EnableBasicAuth {
 			log.Printf("Using Basic Authentication")
