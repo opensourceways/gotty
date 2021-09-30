@@ -20,7 +20,7 @@ import (
 func (server *Server) generateHandleWS(ctx context.Context, cancel context.CancelFunc, counter *counter) http.HandlerFunc {
 	once := new(int64)
 
-	heartBeat := time.NewTicker(time.Second * 5)
+	heartBeat := time.NewTicker(time.Second * 10)
 	go func() {
 		for {
 			select {
