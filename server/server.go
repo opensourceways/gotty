@@ -26,8 +26,9 @@ import (
 
 // Server provides a webtty HTTP endpoint.
 type Server struct {
-	factory Factory
-	options *Options
+	factory   Factory
+	options   *Options
+	heartBeat time.Time
 
 	upgrader      *websocket.Upgrader
 	indexTemplate *template.Template
@@ -70,8 +71,9 @@ func New(factory Factory, options *Options) (*Server, error) {
 	}
 
 	return &Server{
-		factory: factory,
-		options: options,
+		factory:   factory,
+		options:   options,
+		heartBeat: time.Now(),
 
 		upgrader: &websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -209,7 +211,7 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 		siteHandler = server.wrapLogger(withGz)
 		wsMux.Handle("/", siteHandler)
 	}
-
+	wsMux.HandleFunc(pathPrefix+"active-time", server.handleActiveTime)
 	wsMux.HandleFunc(pathPrefix+"ws", server.generateHandleWS(ctx, cancel, counter))
 	siteHandler = http.Handler(wsMux)
 

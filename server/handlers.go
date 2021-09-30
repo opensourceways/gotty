@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync/atomic"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -19,11 +20,20 @@ import (
 func (server *Server) generateHandleWS(ctx context.Context, cancel context.CancelFunc, counter *counter) http.HandlerFunc {
 	once := new(int64)
 
+	heartBeat := time.NewTicker(time.Second * 5)
 	go func() {
-		select {
-		case <-counter.timer().C:
-			cancel()
-		case <-ctx.Done():
+		for {
+			select {
+			case <-heartBeat.C:
+				if counter.count() != 0 {
+					server.heartBeat = time.Now()
+				}
+			case <-counter.timer().C:
+				cancel()
+				return
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
@@ -166,6 +176,9 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 	err = tty.Run(ctx)
 
 	return err
+}
+func (server *Server) handleActiveTime(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(server.heartBeat.String()))
 }
 
 func (server *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
