@@ -178,6 +178,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 	return err
 }
 func (server *Server) handleActiveTime(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(server.heartBeat.String()))
 }
 

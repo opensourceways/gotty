@@ -17,7 +17,11 @@ if (elem !== null) {
         term = new Xterm(elem);
     }
     const httpsEnabled = window.location.protocol == "https:";
-    const url = (httpsEnabled ? 'wss://' : 'ws://') + window.location.host + window.location.pathname + 'ws';
+    if (window.location.pathname.endsWith('/')) {
+        const url = (httpsEnabled ? 'wss://' : 'ws://') + window.location.host + window.location.pathname + 'ws';
+    } else {
+        const url = (httpsEnabled ? 'wss://' : 'ws://') + window.location.host + window.location.pathname + '/ws';
+    }
     const args = window.location.search;
     const factory = new ConnectionFactory(url, protocols);
     const wt = new WebTTY(term, factory, args, gotty_auth_token);
