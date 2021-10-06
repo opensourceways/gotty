@@ -179,7 +179,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 }
 func (server *Server) handleActiveTime(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(server.heartBeat.String()))
+	w.Write([]byte(server.heartBeat.Format("2006-01-02T15:04:05.000Z")))
 }
 
 func (server *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
