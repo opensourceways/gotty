@@ -3,6 +3,7 @@ package localcommand
 import (
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -30,7 +31,14 @@ type LocalCommand struct {
 
 func New(command string, argv []string, options ...Option) (*LocalCommand, error) {
 	cmd := exec.Command(command, argv...)
-
+	//remove gotty environments
+	var envs []string
+	for _, k := range os.Environ() {
+		if !strings.HasPrefix(k, "GOTTY_") {
+			envs = append(envs, k)
+		}
+	}
+	cmd.Env = envs
 	pty, err := pty.Start(cmd)
 	if err != nil {
 		// todo close cmd?
