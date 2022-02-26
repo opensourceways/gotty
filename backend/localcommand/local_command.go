@@ -29,7 +29,7 @@ type LocalCommand struct {
 	ptyClosed chan struct{}
 }
 
-func New(command string, argv []string, options ...Option) (*LocalCommand, error) {
+func New(command string, argv []string, workingDir string, options ...Option) (*LocalCommand, error) {
 	cmd := exec.Command(command, argv...)
 	//remove gotty environments
 	var envs []string
@@ -39,6 +39,11 @@ func New(command string, argv []string, options ...Option) (*LocalCommand, error
 		}
 	}
 	cmd.Env = envs
+	if len(workingDir) != 0 {
+		if st, err := os.Stat(workingDir); err == nil && st.IsDir() {
+			cmd.Dir = workingDir
+		}
+	}
 	pty, err := pty.Start(cmd)
 	if err != nil {
 		// todo close cmd?
@@ -57,7 +62,6 @@ func New(command string, argv []string, options ...Option) (*LocalCommand, error
 		pty:       pty,
 		ptyClosed: ptyClosed,
 	}
-
 	for _, option := range options {
 		option(lcmd)
 	}

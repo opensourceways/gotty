@@ -8,8 +8,9 @@ import (
 )
 
 type Options struct {
-	CloseSignal  int `hcl:"close_signal" flagName:"close-signal" flagSName:"" flagDescribe:"Signal sent to the command process when gotty close it (default: SIGHUP)" default:"1"`
-	CloseTimeout int `hcl:"close_timeout" flagName:"close-timeout" flagSName:"" flagDescribe:"Time in seconds to force kill process after client is disconnected (default: -1)" default:"-1"`
+	CloseSignal  int    `hcl:"close_signal" flagName:"close-signal" flagSName:"" flagDescribe:"Signal sent to the command process when gotty close it (default: SIGHUP)" default:"1"`
+	CloseTimeout int    `hcl:"close_timeout" flagName:"close-timeout" flagSName:"" flagDescribe:"Time in seconds to force kill process after client is disconnected (default: -1)" default:"-1"`
+	WorkingDir   string `hcl:"working_dir" flagName:"process-working-dir" flagSName:"wk" flagDescribe:"The working dir for running process" default:""`
 }
 
 type Factory struct {
@@ -44,5 +45,5 @@ func (factory *Factory) New(params map[string][]string) (server.Slave, error) {
 		argv = append(argv, params["arg"]...)
 	}
 
-	return New(factory.command, argv, factory.opts...)
+	return New(factory.command, argv, factory.options.WorkingDir, factory.opts...)
 }

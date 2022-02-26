@@ -73,7 +73,6 @@ func main() {
 		if err != nil {
 			exit(err, 6)
 		}
-
 		args := c.Args()
 		factory, err := localcommand.NewFactory(args[0], args[1:], backendOptions)
 		if err != nil {
