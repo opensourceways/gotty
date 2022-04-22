@@ -32,6 +32,7 @@ type Options struct {
 	WSOrigin            string           `hcl:"ws_origin" flagName:"ws-origin" flagDescribe:"A regular expression that matches origin URLs to be accepted by WebSocket. No cross origin requests are acceptable by default" default:""`
 	Term                string           `hcl:"term" flagName:"term" flagDescribe:"Terminal name to use on the browser, one of xterm or hterm." default:"xterm"`
 	OnlyEnableWS        bool             `hcl:"only_enable_backend_ws" flagName:"only-enable-backend-ws-server" flagSName:"ws" flagDescribe:"Only enable websocket backend" default:"false"`
+	ReadWriteSize       int              `hcl:"read_write_size" flagName:"read-write-size" flagSName:"rw" flagDescribe:"Set the maximum limit on user input and output" default:"5120"`
 
 	TitleVariables map[string]interface{}
 }
