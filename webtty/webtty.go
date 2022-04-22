@@ -33,7 +33,7 @@ type WebTTY struct {
 // masterConn is a connection to the PTY master,
 // typically it's a websocket connection to a client.
 // slave is a PTY slave such as a local command with a PTY.
-func New(masterConn Master, slave Slave, options ...Option) (*WebTTY, error) {
+func New(masterConn Master, bufferSize int, slave Slave, options ...Option) (*WebTTY, error) {
 	wt := &WebTTY{
 		masterConn: masterConn,
 		slave:      slave,
@@ -42,7 +42,7 @@ func New(masterConn Master, slave Slave, options ...Option) (*WebTTY, error) {
 		columns:     0,
 		rows:        0,
 
-		bufferSize: 1024,
+		bufferSize: bufferSize,
 	}
 
 	for _, option := range options {

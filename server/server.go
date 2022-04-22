@@ -4,8 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/NYTimes/gziphandler"
-	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	noesctmpl "text/template"
 	"time"
+
+	"github.com/NYTimes/gziphandler"
+	assetfs "github.com/elazarl/go-bindata-assetfs"
 
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -76,8 +77,8 @@ func New(factory Factory, options *Options) (*Server, error) {
 		heartBeat: time.Now(),
 
 		upgrader: &websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
+			ReadBufferSize:  options.ReadWriteSize,
+			WriteBufferSize: options.ReadWriteSize,
 			Subprotocols:    webtty.Protocols,
 			CheckOrigin:     originChekcer,
 		},
