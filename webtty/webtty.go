@@ -202,7 +202,7 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 						bs = true
 						continue
 					} else if bs {
-						if data[0] == 8 {
+						if data[0] == uint8(8) {
 							if index > 0 {
 								index -= 1
 							}
@@ -467,12 +467,3 @@ func judgeRPosition(data []byte) (index int) {
 	}
 	return
 }
-
-//func Initialize(m string) {
-//	Message <- m
-//	message = ""
-//	index = math.MaxInt
-//	commandEnd = false
-//	bel = false
-//	bs = false
-//}

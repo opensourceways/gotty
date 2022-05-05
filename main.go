@@ -98,6 +98,7 @@ func main() {
 		log.Printf("GoTTY is starting with command: %s", strings.Join(args, " "))
 
 		webtty.Instance = appOptions.Instance
+		task.Option = appOptions
 		errs := make(chan error, 1)
 		go func() {
 			errs <- srv.Run(ctx, server.WithGracefullContext(gCtx))

@@ -10,11 +10,15 @@ import (
 )
 
 var (
+	//Check whether the user presses the delete key
 	bytes     = []byte{8, 27, 91, 75}
 	bytesLine = []byte{27, 91, 63, 49, 48, 51, 52, 104}
-	ctrlL     = []byte{27, 91, 72, 27, 91, 50, 74, 98, 97, 115, 104, 45, 51, 46, 50, 36, 32}
-	clear     = []byte{27, 91, 72, 27, 91, 50, 74}
-	nr        = []byte{13, 10}
+	//Check whether the user presses CTRL +L
+	ctrlL = []byte{27, 91, 72, 27, 91, 50, 74, 98, 97, 115, 104, 45, 51, 46, 50, 36, 32}
+	//Check whether the user presses clear
+	clear = []byte{27, 91, 72, 27, 91, 50, 74}
+	//Check whether it is \r\n
+	nr = []byte{13, 10}
 )
 
 func ApplyDefaultValues(struct_ interface{}) (err error) {

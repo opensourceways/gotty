@@ -5,9 +5,12 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/opensourceways/gotty/server"
 	"github.com/opensourceways/gotty/webtty"
 	"github.com/robfig/cron"
 )
+
+var Option = new(server.Options)
 
 func send() {
 	if len(webtty.Log) != 0 {
@@ -15,7 +18,7 @@ func send() {
 		copy(logBak, webtty.Log)
 		webtty.Log = make([]string, 0)
 		for _, v := range logBak {
-			_, err := http.Post("http://localhost:8888/log.gotty", "application/json", bytes.NewReader([]byte(v)))
+			_, err := http.Post(Option.SendUrl, "application/json", bytes.NewReader([]byte(v)))
 			if err != nil {
 				log.Println(err)
 				break
