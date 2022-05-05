@@ -5,4 +5,7 @@ import (
 )
 
 // Master represents a PTY master, usually it's a websocket connection.
-type Master io.ReadWriter
+type Master interface {
+	io.ReadWriter
+	Ip() string
+}

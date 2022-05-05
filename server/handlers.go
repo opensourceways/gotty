@@ -55,7 +55,8 @@ func (server *Server) generateHandleWS(ctx context.Context, cancel context.Cance
 				"Connection closed by %s: %s, connections: %d/%d",
 				closeReason, r.RemoteAddr, num, server.options.MaxConnection,
 			)
-
+			webtty.Ip = webtty.DeleteIp(r.RemoteAddr)
+			webtty.RecordLog(r.RemoteAddr, "", "", webtty.Logout)
 			if server.options.Once {
 				cancel()
 			}
@@ -166,6 +167,9 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 	}
 	if server.options.Preferences != nil {
 		opts = append(opts, webtty.WithMasterPreferences(server.options.Preferences))
+	}
+	if server.options.RecordUserLog {
+		opts = append(opts, webtty.WithRecordLog())
 	}
 
 	tty, err := webtty.New(&wsWrapper{conn}, server.options.ReadWriteSize, slave, opts...)

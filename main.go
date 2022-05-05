@@ -10,11 +10,12 @@ import (
 	"syscall"
 
 	"github.com/codegangsta/cli"
-
 	"github.com/opensourceways/gotty/backend/localcommand"
 	"github.com/opensourceways/gotty/pkg/homedir"
 	"github.com/opensourceways/gotty/server"
+	"github.com/opensourceways/gotty/task"
 	"github.com/opensourceways/gotty/utils"
+	"github.com/opensourceways/gotty/webtty"
 )
 
 func main() {
@@ -96,6 +97,7 @@ func main() {
 
 		log.Printf("GoTTY is starting with command: %s", strings.Join(args, " "))
 
+		webtty.Instance = appOptions.Instance
 		errs := make(chan error, 1)
 		go func() {
 			errs <- srv.Run(ctx, server.WithGracefullContext(gCtx))
@@ -108,6 +110,9 @@ func main() {
 		}
 
 	}
+	go func() {
+		task.SendLog()
+	}()
 	app.Run(os.Args)
 }
 
