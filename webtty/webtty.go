@@ -15,20 +15,9 @@ import (
 )
 
 var (
-	Command = make(chan string)
-	Uinput  = make(chan string)
-	Message = make(chan string)
-	Ip      = make([]string, 0)
-	Log     = make([]string, 0)
-
-	command    string
-	commandEnd bool
-	message    string
-	bel        bool
-	bs         bool
-	ps         string
-	index      = math.MaxInt
-	Instance   string
+	Log      = make([]string, 0)
+	Instance string
+	Ip       = make([]string, 0)
 )
 
 type LogType int
@@ -91,6 +80,19 @@ func New(masterConn Master, bufferSize int, slave Slave, options ...Option) (*We
 // responsibility.
 // If the connection to one end gets closed, returns ErrSlaveClosed or ErrMasterClosed.
 func (wt *WebTTY) Run(ctx context.Context) error {
+	var (
+		Command = make(chan string)
+		Uinput  = make(chan string)
+		Message = make(chan string)
+
+		command    string
+		commandEnd bool
+		message    string
+		bel        bool
+		bs         bool
+		ps         string
+		index      = math.MaxInt
+	)
 	err := wt.sendInitializeMessage()
 	if err != nil {
 		return errors.Wrapf(err, "failed to send initializing message")
@@ -145,11 +147,21 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 						continue
 					} else {
 						if i := judgeRPosition(data); i == -1 {
-							Initialize(message)
+							Message <- message
+							message = ""
+							index = math.MaxInt
+							commandEnd = false
+							bel = false
+							bs = false
 							continue
 						} else {
 							message += string(data[:i])
-							Initialize(message)
+							Message <- message
+							message = ""
+							index = math.MaxInt
+							commandEnd = false
+							bel = false
+							bs = false
 							continue
 						}
 					}
@@ -170,7 +182,12 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 							Command <- ps + "-terminal-" + command
 							commandEnd = true
 							command = ""
-							Initialize(message)
+							Message <- message
+							message = ""
+							index = math.MaxInt
+							commandEnd = false
+							bel = false
+							bs = false
 						}
 						continue
 					}
@@ -451,11 +468,11 @@ func judgeRPosition(data []byte) (index int) {
 	return
 }
 
-func Initialize(m string) {
-	Message <- m
-	message = ""
-	index = math.MaxInt
-	commandEnd = false
-	bel = false
-	bs = false
-}
+//func Initialize(m string) {
+//	Message <- m
+//	message = ""
+//	index = math.MaxInt
+//	commandEnd = false
+//	bel = false
+//	bs = false
+//}
