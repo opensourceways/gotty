@@ -11,7 +11,6 @@ require (
 	github.com/hashicorp/go-multierror v0.0.0-20150608033521-56912fb08d85 // indirect
 	github.com/kr/pty v0.0.0-20150511174710-5cf931ef8f76
 	github.com/pkg/errors v0.8.1-0.20161029093637-248dadf4e906
-	github.com/robfig/cron v1.2.0
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/yudai/hcl v0.0.0-20151013225006-5fa2393b3552
 )

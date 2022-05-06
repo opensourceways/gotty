@@ -7,12 +7,11 @@ import (
 
 	"github.com/opensourceways/gotty/server"
 	"github.com/opensourceways/gotty/webtty"
-	"github.com/robfig/cron"
 )
 
 var Option = new(server.Options)
 
-func send() {
+func Send() {
 	if len(webtty.Log) != 0 {
 		var logBak = make([]string, len(webtty.Log))
 		copy(logBak, webtty.Log)
@@ -25,12 +24,4 @@ func send() {
 			}
 		}
 	}
-}
-func SendLog() {
-	c := cron.New()
-	err := c.AddFunc("0/30 * * * * ?", send)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	c.Start()
 }

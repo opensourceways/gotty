@@ -142,7 +142,7 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 					}
 				}
 				if commandEnd {
-					if len(data) >= 2 && data[len(data)-2] == uint8(13) {
+					if len(data) >= 2 && data[len(data)-2] == uint8(13) && data[len(data)-1] == uint8(10) {
 						message += string(data)
 						continue
 					} else {
@@ -461,7 +461,7 @@ func RecordLog(ps, input, output string, t LogType) {
 func judgeRPosition(data []byte) (index int) {
 	index = -1
 	for k, v := range data {
-		if v == uint8(13) {
+		if v == uint8(13) && (k+1 < len(data) && data[k+1] == uint8(10)) {
 			index = k
 		}
 	}

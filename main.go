@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/opensourceways/gotty/backend/localcommand"
@@ -112,7 +113,7 @@ func main() {
 
 	}
 	go func() {
-		task.SendLog()
+		send()
 	}()
 	app.Run(os.Args)
 }
@@ -152,6 +153,16 @@ func waitSignals(errs chan error, cancel context.CancelFunc, gracefullCancel con
 		default:
 			cancel()
 			return <-errs
+		}
+	}
+}
+func send() {
+	t := time.NewTicker(time.Second * 30)
+
+	for {
+		select {
+		case <-t.C:
+			task.Send()
 		}
 	}
 }
