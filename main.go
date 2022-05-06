@@ -8,13 +8,15 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/codegangsta/cli"
-
 	"github.com/opensourceways/gotty/backend/localcommand"
 	"github.com/opensourceways/gotty/pkg/homedir"
 	"github.com/opensourceways/gotty/server"
+	"github.com/opensourceways/gotty/task"
 	"github.com/opensourceways/gotty/utils"
+	"github.com/opensourceways/gotty/webtty"
 )
 
 func main() {
@@ -96,6 +98,8 @@ func main() {
 
 		log.Printf("GoTTY is starting with command: %s", strings.Join(args, " "))
 
+		webtty.Instance = appOptions.Instance
+		task.Option = appOptions
 		errs := make(chan error, 1)
 		go func() {
 			errs <- srv.Run(ctx, server.WithGracefullContext(gCtx))
@@ -108,6 +112,9 @@ func main() {
 		}
 
 	}
+	go func() {
+		send()
+	}()
 	app.Run(os.Args)
 }
 
@@ -146,6 +153,16 @@ func waitSignals(errs chan error, cancel context.CancelFunc, gracefullCancel con
 		default:
 			cancel()
 			return <-errs
+		}
+	}
+}
+func send() {
+	t := time.NewTicker(time.Second * 30)
+
+	for {
+		select {
+		case <-t.C:
+			task.Send()
 		}
 	}
 }

@@ -33,8 +33,10 @@ type Options struct {
 	Term                string           `hcl:"term" flagName:"term" flagDescribe:"Terminal name to use on the browser, one of xterm or hterm." default:"xterm"`
 	OnlyEnableWS        bool             `hcl:"only_enable_backend_ws" flagName:"only-enable-backend-ws-server" flagSName:"ws" flagDescribe:"Only enable websocket backend" default:"false"`
 	ReadWriteSize       int              `hcl:"read_write_size" flagName:"read-write-size" flagSName:"rw" flagDescribe:"Set the maximum limit on user input and output" default:"5120"`
-
-	TitleVariables map[string]interface{}
+	RecordUserLog       bool             `hcl:"record_user_log" flagName:"record-user-log" flagSName:"rul" flagDescribe:"whether to record user operation logs" default:"false"`
+	Instance            string           `hcl:"instance" flagName:"instance" flagDescribe:"gotty instance id" default:""`
+	SendUrl             string           `hcl:"send_url" flagName:"send-url" flagDescribe:"url for collecting logs configured by fluentd (eg: --send-url http://localhost:8888/log.gotty)" default:""`
+	TitleVariables      map[string]interface{}
 }
 
 func (options *Options) Validate() error {

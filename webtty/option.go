@@ -49,6 +49,14 @@ func WithReconnect(timeInSeconds int) Option {
 	}
 }
 
+// WithRecordLog whether to record user operation logs
+func WithRecordLog() Option {
+	return func(wt *WebTTY) error {
+		wt.recordLog = true
+		return nil
+	}
+}
+
 // WithMasterPreferences sets an optional configuration of master.
 func WithMasterPreferences(preferences interface{}) Option {
 	return func(wt *WebTTY) error {

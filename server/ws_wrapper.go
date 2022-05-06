@@ -31,3 +31,7 @@ func (wsw *wsWrapper) Read(p []byte) (n int, err error) {
 		return reader.Read(p)
 	}
 }
+
+func (wsw *wsWrapper) Ip() string {
+	return wsw.Conn.RemoteAddr().String()
+}
