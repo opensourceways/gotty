@@ -100,175 +100,177 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 
 	errs := make(chan error, 2)
 
-	go func() {
-		for {
-			select {
-			case s := <-Uinput:
-				ipd := strings.Split(s, "-terminal-")
-				ps = ipd[0]
-				data := []byte(ipd[1])
-				if utils.FilterOutput(data) {
-					continue
-				}
-				if !ipIsInSlice(ps) {
-					Ip = append(Ip, ps)
-					RecordLog(ps, "", "", Login)
-					continue
-				}
-				if len(data) >= 7 && utils.EqualTwoSliceByClear(data[:7]) {
-					continue
-				}
-				if len(data) == 1 && data[0] == uint8(7) {
-					bel = true
-					continue
-				}
-				if bel {
-					if len(data) == 2 && data[0] == uint8(13) && data[1] == uint8(10) {
+	if wt.recordLog {
+		go func() {
+			for {
+				select {
+				case s := <-Uinput:
+					ipd := strings.Split(s, "-terminal-")
+					ps = ipd[0]
+					data := []byte(ipd[1])
+					if utils.FilterOutput(data) {
 						continue
 					}
-					if !utils.EqualTwoSliceByBack(data) && len(data) > 2 {
-						if i := judgeRPosition(data); i != -1 {
+					if !ipIsInSlice(ps) {
+						Ip = append(Ip, ps)
+						RecordLog(ps, "", "", Login)
+						continue
+					}
+					if len(data) >= 7 && utils.EqualTwoSliceByClear(data[:7]) {
+						continue
+					}
+					if len(data) == 1 && data[0] == uint8(7) {
+						bel = true
+						continue
+					}
+					if bel {
+						if len(data) == 2 && data[0] == uint8(13) && data[1] == uint8(10) {
 							continue
 						}
-						bel = false
-					} else {
-						bel = false
-					}
-				}
-				if command != "" {
-					if l := strings.Index(string(data), strings.TrimSpace(command)); l > 0 {
-						command = string(data)[l:]
-						continue
-					}
-				}
-				if commandEnd {
-					if len(data) >= 2 && data[len(data)-2] == uint8(13) && data[len(data)-1] == uint8(10) {
-						message += string(data)
-						continue
-					} else {
-						if i := judgeRPosition(data); i == -1 {
-							Message <- message
-							message = ""
-							index = math.MaxInt
-							commandEnd = false
+						if !utils.EqualTwoSliceByBack(data) && len(data) > 2 {
+							if i := judgeRPosition(data); i != -1 {
+								continue
+							}
 							bel = false
-							bs = false
-							continue
 						} else {
-							message += string(data[:i])
-							Message <- message
-							message = ""
-							index = math.MaxInt
-							commandEnd = false
 							bel = false
-							bs = false
-							continue
 						}
 					}
-				}
-				if utils.EqualTwoSliceByBack(data) {
 					if command != "" {
-						command = command[:len(command)-1]
-					}
-					continue
-				}
-				if utils.EqualNR(data) {
-					Command <- ps + "-terminal-" + command
-					commandEnd = true
-					command = ""
-				} else {
-					if i := judgeRPosition(data); i > -1 {
-						if i == 0 {
-							Command <- ps + "-terminal-" + command
-							commandEnd = true
-							command = ""
-							Message <- message
-							message = ""
-							index = math.MaxInt
-							commandEnd = false
-							bel = false
-							bs = false
+						if l := strings.Index(string(data), strings.TrimSpace(command)); l > 0 {
+							command = string(data)[l:]
+							continue
 						}
-						continue
 					}
-					if len(data) == 1 && data[0] == uint8(8) {
-						if index == math.MaxInt {
-							index = len(command) - 1
+					if commandEnd {
+						if len(data) >= 2 && data[len(data)-2] == uint8(13) && data[len(data)-1] == uint8(10) {
+							message += string(data)
+							continue
 						} else {
-							if index > 0 {
-								index -= 1
+							if i := judgeRPosition(data); i == -1 {
+								Message <- message
+								message = ""
+								index = math.MaxInt
+								commandEnd = false
+								bel = false
+								bs = false
+								continue
+							} else {
+								message += string(data[:i])
+								Message <- message
+								message = ""
+								index = math.MaxInt
+								commandEnd = false
+								bel = false
+								bs = false
+								continue
 							}
 						}
-						bs = true
+					}
+					if utils.EqualTwoSliceByBack(data) {
+						if command != "" {
+							command = command[:len(command)-1]
+						}
 						continue
-					} else if bs {
-						if data[0] == uint8(8) {
-							if index > 0 {
-								index -= 1
-							}
-							if len(data) > 5 && utils.ExistBytes(data[1:5]) {
-								command = command[:index] + string(utils.DeleteBs(data[5:]))
+					}
+					if utils.EqualNR(data) {
+						Command <- ps + "-terminal-" + command
+						commandEnd = true
+						command = ""
+					} else {
+						if i := judgeRPosition(data); i > -1 {
+							if i == 0 {
+								Command <- ps + "-terminal-" + command
+								commandEnd = true
+								command = ""
+								Message <- message
+								message = ""
+								index = math.MaxInt
+								commandEnd = false
+								bel = false
+								bs = false
 							}
 							continue
 						}
-						if utils.ExistBytes(data) {
+						if len(data) == 1 && data[0] == uint8(8) {
+							if index == math.MaxInt {
+								index = len(command) - 1
+							} else {
+								if index > 0 {
+									index -= 1
+								}
+							}
+							bs = true
+							continue
+						} else if bs {
+							if data[0] == uint8(8) {
+								if index > 0 {
+									index -= 1
+								}
+								if len(data) > 5 && utils.ExistBytes(data[1:5]) {
+									command = command[:index] + string(utils.DeleteBs(data[5:]))
+								}
+								continue
+							}
+							if utils.ExistBytes(data) {
+								index += 1
+								continue
+							}
+							if index > len(command) {
+								index = len(command)
+							}
+							commandBak := command[:index]
+							if utils.ExistBytes(data) {
+								if len(data) > 3 {
+									commandBak += string(data[3])
+									data = data[3:]
+								}
+							}
+							result := utils.DeleteBs(data)
+							command = commandBak + string(result)
 							index += 1
 							continue
 						}
-						if index > len(command) {
-							index = len(command)
-						}
-						commandBak := command[:index]
-						if utils.ExistBytes(data) {
-							if len(data) > 3 {
-								commandBak += string(data[3])
-								data = data[3:]
+						result := utils.DeleteBel(data)
+						if !bs && len(data) > 1 && data[len(data)-1] == uint8(8) {
+							command = command[:len(command)-1]
+							if utils.ExistBytes(data) {
+								if len(data) > 3 {
+									data = data[3:]
+								}
 							}
+							result = utils.DeleteBs(data)
 						}
-						result := utils.DeleteBs(data)
-						command = commandBak + string(result)
-						index += 1
-						continue
-					}
-					result := utils.DeleteBel(data)
-					if !bs && len(data) > 1 && data[len(data)-1] == uint8(8) {
-						command = command[:len(command)-1]
-						if utils.ExistBytes(data) {
-							if len(data) > 3 {
-								data = data[3:]
-							}
+						if !bs && len(data) > 1 && data[0] == uint8(8) {
+							result = utils.DeleteBs(result)
+							command = string(result)
+							continue
 						}
-						result = utils.DeleteBs(data)
+						command += string(result)
 					}
-					if !bs && len(data) > 1 && data[0] == uint8(8) {
-						result = utils.DeleteBs(result)
-						command = string(result)
-						continue
-					}
-					command += string(result)
 				}
 			}
-		}
-	}()
+		}()
 
-	go func() {
-		for {
-			select {
-			case cmd := <-Command:
-				output := <-Message
-				ipd := strings.Split(cmd, "-terminal-")
-				input := ipd[1]
-				if len(ipd) < 2 || len(input) == 0 || strings.Contains(input, "1H~") {
-					continue
+		go func() {
+			for {
+				select {
+				case cmd := <-Command:
+					output := <-Message
+					ipd := strings.Split(cmd, "-terminal-")
+					input := ipd[1]
+					if len(ipd) < 2 || len(input) == 0 || strings.Contains(input, "1H~") {
+						continue
+					}
+					if utils.ExistVi(input) || input == "clear" {
+						output = ""
+					}
+					fmt.Printf("ps:%s\n命令是:%s\n信息是:%s\n", ipd[0], input, output)
+					RecordLog(ipd[0], input, output, Operation)
 				}
-				if utils.ExistVi(input) || input == "clear" {
-					output = ""
-				}
-				fmt.Printf("ps:%s\n命令是:%s\n信息是:%s\n", ipd[0], input, output)
-				RecordLog(ipd[0], input, output, Operation)
 			}
-		}
-	}()
+		}()
+	}
 
 	go func() {
 		errs <- func() error {
@@ -278,10 +280,12 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 				if err != nil {
 					return ErrSlaveClosed
 				}
-				go func() {
-					Uinput <- wt.masterConn.Ip() + "-terminal-" + string(buffer[:n])
-					return
-				}()
+				if wt.recordLog {
+					go func() {
+						Uinput <- wt.masterConn.Ip() + "-terminal-" + string(buffer[:n])
+						return
+					}()
+				}
 				time.Sleep(200 * time.Microsecond)
 				err = wt.handleSlaveReadEvent(buffer[:n])
 				if err != nil {
