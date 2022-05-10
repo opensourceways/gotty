@@ -19,6 +19,10 @@ var (
 	clear = []byte{27, 91, 72, 27, 91, 50, 74}
 	//Check whether it is \r\n
 	nr = []byte{13, 10}
+	//Check whether it is \r\n for zsh
+	zshnr = []byte{27, 91, 63, 49, 108, 27, 62}
+	//Whether the ZSH return data prefix
+	zshoutputPrefix = []byte{27, 91, 63, 50, 48, 48, 52, 108, 13, 13, 10}
 )
 
 func ApplyDefaultValues(struct_ interface{}) (err error) {
@@ -74,6 +78,21 @@ func EqualTwoSliceByLine(data []byte) bool {
 	equal := true
 	if len(data) != 8 {
 		return false
+	}
+	//whitespace characters in the ZSH command
+	var blank = []byte{27, 91, 63, 50, 48, 48, 52, 104}
+	if len(data) == 8 {
+		for i := 0; i < len(blank); i++ {
+			if blank[i] != data[i] {
+				equal = false
+				break
+			}
+		}
+	}
+	if equal {
+		return true
+	} else {
+		equal = true
 	}
 
 	for i := 0; i < len(data); i++ {
@@ -137,7 +156,7 @@ func EqualTwoSliceByClear(data []byte) bool {
 	return equal
 }
 
-// EqualNR Check whether it is \r\n
+// EqualNR Check whether it is enter
 func EqualNR(data []byte) bool {
 	equal := true
 	if len(data) != 2 {
@@ -153,8 +172,39 @@ func EqualNR(data []byte) bool {
 	return equal
 }
 
+// EqualNRForZsh Check whether it is enter for zsh
+func EqualNRForZsh(data []byte) bool {
+	equal := true
+	if len(data) != 7 {
+		return false
+	}
+	bts := []byte{27, 91, 48, 109, 32}
+	datas := DeleteBs(data)
+	for i := 0; i < len(datas); i++ {
+		if bts[i] != datas[i] {
+			equal = false
+			break
+		}
+	}
+	if equal {
+		return true
+	} else {
+		equal = true
+	}
+	for i := 0; i < len(data); i++ {
+		if data[i] != zshnr[i] {
+			equal = false
+			break
+		}
+	}
+	return equal
+}
+
 func FilterOutput(data []byte) bool {
 	if len(data) == 0 {
+		return true
+	}
+	if len(data) > 4 && (data[0] == uint8(27) && data[1] == uint8(91) && data[2] == uint8(63) && data[3] == uint8(49) && data[4] == uint8(104)) {
 		return true
 	}
 	if EqualTwoSliceByLine(data) || EqualTwoSliceByCtrlL(data) || EqualTwoSliceByClear(data) {
@@ -163,15 +213,33 @@ func FilterOutput(data []byte) bool {
 	return false
 }
 
+// ExistZshOutPut Whether the ZSH return data prefix exists
+func ExistZshOutPut(data []byte) bool {
+	if len(data) < len(zshoutputPrefix) {
+		return false
+	}
+	for i := 0; i < len(zshoutputPrefix); i++ {
+		if data[i] != zshoutputPrefix[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // ExistBytes judge the head whether or not exist [27,91,67]
 func ExistBytes(data []byte) bool {
 	if len(data) > 4 && data[0] == uint8(27) && data[1] == uint8(91) && data[2] == uint8(67) {
 		return true
 	}
+	//bash use ->
 	if len(data) == 3 && data[0] == uint8(27) && data[1] == uint8(91) && data[2] == uint8(67) {
 		return true
 	}
 	if len(data) == 4 && data[0] == uint8(27) && data[1] == uint8(91) && data[2] == uint8(49) && data[3] == uint8(80) {
+		return true
+	}
+	// zsh use ->
+	if len(data) == 4 && data[0] == uint8(27) && data[1] == uint8(91) && data[2] == uint8(49) && data[3] == uint8(67) {
 		return true
 	}
 	return false

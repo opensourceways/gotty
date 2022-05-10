@@ -90,7 +90,6 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 		message    string
 		bel        bool
 		bs         bool
-		ps         string
 		index      = math.MaxInt
 	)
 	err := wt.sendInitializeMessage()
@@ -106,9 +105,8 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 				select {
 				case s := <-Uinput:
 					ipd := strings.Split(s, "-terminal-")
-					ps = ipd[0]
-					data := []byte(ipd[1])
-					if utils.FilterOutput(data) {
+					ps, data := ipd[0], []byte(ipd[1])
+					if utils.FilterOutput(data) || data[len(data)-1] == uint8(13) {
 						continue
 					}
 					if !ipIsInSlice(ps) {
@@ -136,59 +134,72 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 							bel = false
 						}
 					}
-					if command != "" {
+					if utils.EqualTwoSliceByBack(data) || (len(data) == 3 && data[0] == uint8(8) && data[1] == uint8(32) && data[2] == uint8(8)) {
+						if command != "" {
+							command = command[:len(command)-1]
+						}
+						continue
+					}
+					if command != "" && !utils.EqualNRForZsh(data) && !utils.EqualTwoSliceByBack(data) {
+						if len(data) > 1 && data[0] == uint8(8) {
+							command = string(utils.DeleteBs(data))
+							continue
+						}
 						if l := strings.Index(string(data), strings.TrimSpace(command)); l > 0 {
 							command = string(data)[l:]
 							continue
 						}
 					}
 					if commandEnd {
-						if len(data) >= 2 && data[len(data)-2] == uint8(13) && data[len(data)-1] == uint8(10) {
-							message += string(data)
+						if len(data) == 11 && utils.ExistZshOutPut(data) {
+							continue
+						}
+						if len(data) >= 2 && (data[len(data)-2] == uint8(13) && data[len(data)-1] == uint8(10)) {
+							if len(data) > 11 && utils.ExistZshOutPut(data[:11]) {
+								message += string(data[11:])
+							} else {
+								message += string(data)
+							}
 							continue
 						} else {
 							if i := judgeRPosition(data); i == -1 {
 								Message <- message
-								message = ""
-								index = math.MaxInt
-								commandEnd = false
-								bel = false
-								bs = false
+								initParameter(&message, &command, &index, &commandEnd, &bel, &bs, false)
 								continue
 							} else {
-								message += string(data[:i])
+								if utils.ExistZshOutPut(data[:i]) {
+									message += string(data[11:i])
+								} else {
+									message += string(data[:i])
+									if i == 9 {
+										message = ""
+									}
+								}
 								Message <- message
-								message = ""
-								index = math.MaxInt
-								commandEnd = false
-								bel = false
-								bs = false
+								initParameter(&message, &command, &index, &commandEnd, &bel, &bs, false)
 								continue
 							}
 						}
 					}
-					if utils.EqualTwoSliceByBack(data) {
-						if command != "" {
-							command = command[:len(command)-1]
-						}
-						continue
-					}
-					if utils.EqualNR(data) {
+					if utils.EqualNR(data) || utils.EqualNRForZsh(data) || (len(data) > 2 && utils.EqualNR(data[:2])) || utils.ExistZshOutPut(data) {
 						Command <- ps + "-terminal-" + command
-						commandEnd = true
-						command = ""
+						initParameter(&message, &command, &index, &commandEnd, &bel, &bs, true)
+						if len(data) > 2 && utils.EqualNR(data[:2]) {
+							databak := data[2:]
+							i := judgeRPosition(databak)
+							if i != -1 {
+								message = string(databak[:i])
+							}
+							Message <- message
+							initParameter(&message, &command, &index, &commandEnd, &bel, &bs, false)
+						}
 					} else {
 						if i := judgeRPosition(data); i > -1 {
 							if i == 0 {
 								Command <- ps + "-terminal-" + command
-								commandEnd = true
-								command = ""
+								initParameter(&message, &command, &index, &commandEnd, &bel, &bs, true)
 								Message <- message
-								message = ""
-								index = math.MaxInt
-								commandEnd = false
-								bel = false
-								bs = false
+								initParameter(&message, &command, &index, &commandEnd, &bel, &bs, false)
 							}
 							continue
 						}
@@ -210,6 +221,14 @@ func (wt *WebTTY) Run(ctx context.Context) error {
 								if len(data) > 5 && utils.ExistBytes(data[1:5]) {
 									command = command[:index] + string(utils.DeleteBs(data[5:]))
 								}
+								continue
+							}
+							//in the bash command, delete the same letter
+							if len(data) == 4 && data[0] == uint8(27) && data[1] == uint8(91) && data[2] == uint8(75) && data[3] == uint8(8) {
+								if index > 0 {
+									index -= 1
+								}
+								command = command[:index] + command[index+1:]
 								continue
 							}
 							if utils.ExistBytes(data) {
@@ -470,4 +489,17 @@ func judgeRPosition(data []byte) (index int) {
 		}
 	}
 	return
+}
+
+func initParameter(message, command *string, index *int, commandEnd, bel, bs *bool, flag bool) {
+	if flag {
+		*command = ""
+		*commandEnd = true
+		return
+	}
+	*message = ""
+	*index = math.MaxInt
+	*commandEnd = false
+	*bel = false
+	*bs = false
 }
